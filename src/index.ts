@@ -1,20 +1,16 @@
-// Import the required MCP modules
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { v7 as uuidv7 } from 'uuid';
+import { v7 as uuidv7 } from "uuid";
+import type { CallToolRequest } from "@modelcontextprotocol/sdk/types.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 
 // Create the server
-const server = new Server({
-  name: "uuid-mcp-provider",
-  version: "1.0.0"
-}, {
-  capabilities: {
-    tools: {} // We're only providing tools functionality
-  }
-});
+const server = new Server(
+  { name: "uuid-mcp-provider", version: "1.0.0" },
+  { capabilities: { tools: {} } }
+);
 
-// Register the tools/list endpoint to advertise our generateUuid tool
+// Advertise our generateUuid tool, accepting an optional `count`
 server.setRequestHandler(
   ListToolsRequestSchema,
   async () => {
@@ -22,10 +18,17 @@ server.setRequestHandler(
       tools: [
         {
           name: "generateUuid",
-          description: "Generate a UUID v7 that's timestamp-based and guaranteed to be unique",
+          description: "Generate one or more UUID v7s (timestamp-based). Specify `count` to get multiple.",
           inputSchema: {
             type: "object",
-            properties: {}
+            properties: {
+              count: {
+                type: "integer",
+                minimum: 1,
+                description: "How many UUID v7 strings to generate (defaults to 1)"
+              }
+            },
+            additionalProperties: false
           }
         }
       ]
@@ -33,19 +36,25 @@ server.setRequestHandler(
   }
 );
 
-// Register the tools/call endpoint to handle tool execution
+// Handle calls to generateUuid and generate `count` UUIDs
 server.setRequestHandler(
   CallToolRequestSchema,
-  async (request) => {
+  async (request: CallToolRequest) => {
     if (request.params.name === "generateUuid") {
-      // UUID v7 is timestamp-based with additional random data for uniqueness
-      const uuid = uuidv7();
+      // Pull from params.arguments per MCP spec
+      const raw = request.params.arguments?.count;
+      const count = typeof raw === "number" && raw >= 1 ? raw : 1;
+
+      const uuids: string[] = [];
+      for (let i = 0; i < count; i++) {
+        uuids.push(uuidv7());
+      }
 
       return {
         content: [
           {
             type: "text",
-            text: uuid
+            text: uuids.join("\n")
           }
         ]
       };
@@ -68,3 +77,4 @@ async function main() {
 }
 
 main();
+
