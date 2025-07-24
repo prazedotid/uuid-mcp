@@ -2,6 +2,10 @@
 
 A simple Model Context Protocol (MCP) server that provides timestamp-based UUIDs whenever it's called by an LLM.
 
+<a href="https://glama.ai/mcp/servers/@prazedotid/uuid-mcp">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@prazedotid/uuid-mcp/badge" alt="UUID Provider MCP server" />
+</a>
+
 ## Features
 
 - Provides a single tool: `generateUuid`
